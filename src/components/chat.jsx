@@ -1,167 +1,70 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 
-// Funktion för att sanitera textinnehåll
+// Enkel funktion för att sanera meddelandetext
 const sanitizeMessageContent = (content) => {
-  const tempElement = document.createElement('div');
-  tempElement.innerText = content;
-  return tempElement.innerHTML;
+  return content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+};
+
+// Enkla bot-svar
+const getBotResponse = () => {
+  const botReplies = [
+    "Hej! Hur kan jag hjälpa dig?",
+    "Vad tänker du på?",
+    "Tack för att du skrev!",
+    "Det låter intressant!",
+  ];
+  return botReplies[Math.floor(Math.random() * botReplies.length)];
 };
 
 const Chat = () => {
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');  // Användarens inmatning
-  const [error, setError] = useState('');
-  const [currentConversation, setCurrentConversation] = useState(localStorage.getItem('currentConversationId') || '');
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const navigate = useNavigate();
+  const [messages, setMessages] = useState([
+    { id: 1, user: 'User', content: 'Hej!' },
+    { id: 2, user: 'Bot', content: 'Hej! Hur kan jag hjälpa dig?' }
+  ]); // Starta med några exempelmeddelanden
+  const [newMessage, setNewMessage] = useState(''); // För användarinmatning
 
-  // Set a default conversation ID
-  const defaultConversationId = 'null'; // Uppdatera detta till ett giltigt konversations-ID
-
-  // Om användaren inte är inloggad, omdirigera till inloggningssidan
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-    }
-  }, [token, navigate]);
-
-  // Hämta meddelanden för den aktuella konversationen när komponenten laddas
-  useEffect(() => {
-    const fetchMessages = async () => {
-      const conversationId = currentConversation || defaultConversationId;
-
-      if (!conversationId) {
-        setError('Ogiltigt konversations-ID.');
-        return;
-      }
-
-      try {
-        const response = await fetch(`https://chatify-api.up.railway.app/messages?conversationId=${conversationId}`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Misslyckades att hämta meddelanden. Status: ${response.status}. Fel: ${errorText}`);
-        }
-
-        const fetchedMessages = await response.json();
-        setMessages(fetchedMessages);
-      } catch (error) {
-        setError(`Misslyckades att hämta meddelanden: ${error.message}`);
-        console.error('Fel vid hämtning av meddelanden:', error);
-      }
-    };
-
-    fetchMessages();
-  }, [currentConversation, token]);
-
-  // Funktion för att skicka nytt meddelande
-  const handleNewMessage = async (e) => {
+  // Funktion för att lägga till nytt meddelande
+  const handleNewMessage = (e) => {
     e.preventDefault();
-    setError('');
 
-    if (!newMessage.trim()) {  // Kontrollera om meddelandet är tomt
-      setError('Meddelandet kan inte vara tomt.');
-      return;
-    }
+    // Sanera meddelandet och uppdatera listan
+    if (newMessage.trim() !== "") {
+      const userMessage = { id: messages.length + 1, user: 'User', content: sanitizeMessageContent(newMessage) };
+      setMessages([...messages, userMessage]);
+      setNewMessage(""); // Töm inmatningsfältet
 
-    const conversationId = currentConversation || defaultConversationId;
-
-    // Lägg till loggning för att säkerställa att conversationId är korrekt
-    console.log('Skickar meddelande till conversationId:', conversationId);
-
-    if (!conversationId) {
-      setError('Ogiltigt konversations-ID.');
-      return;
-    }
-
-    try {
-      const response = await fetch('https://chatify-api.up.railway.app/messages', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: sanitizeMessageContent(newMessage.trim()),  // Saniterar innehållet
-          conversationId: conversationId  // Använd aktuellt eller fallback-konversation-ID
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Misslyckades att skicka meddelandet. Status: ${response.status}. Fel: ${errorText}`);
-      }
-
-      // Uppdatera meddelandelistan
-      const updatedMessages = await fetchMessages(); // Uppdaterade meddelanden
-      setMessages(updatedMessages);
-      setNewMessage('');  // Rensa inmatningsfältet efter att meddelandet skickats
-    } catch (error) {
-      setError(`Misslyckades att skicka meddelandet: ${error.message}`);
-      console.error('Fel vid skickande av meddelande:', error);
-    }
-  };
-
-  // Funktion för att radera meddelande
-  const handleDeleteMessage = async (msgId) => {
-    try {
-      const response = await fetch(`https://chatify-api.up.railway.app/messages/${msgId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Misslyckades att radera meddelandet. Status: ${response.status}. Fel: ${errorText}`);
-      }
-
-      // Uppdatera meddelandelistan efter radering
-      const updatedMessages = messages.filter((message) => message.id !== msgId);
-      setMessages(updatedMessages);
-    } catch (error) {
-      setError(`Misslyckades att radera meddelandet: ${error.message}`);
-      console.error('Fel vid radering av meddelande:', error);
+      // Simulera bot-svar efter 1 sekund
+      setTimeout(() => {
+        const botMessage = { id: messages.length + 2, user: 'Bot', content: getBotResponse() };
+        setMessages(prevMessages => [...prevMessages, botMessage]);
+      }, 1000);
     }
   };
 
   return (
-    <div className="chat-container">
-      <h2>Chat</h2>
-      {error && <div className="error-bubble">{error}</div>}
-      <div className="chat-messages">
+    <div style={{ padding: '10px', maxWidth: '600px', margin: '0 auto', backgroundColor: '#f9f9f9', color: 'black' }}> {/* Sätt textfärg här */}
+      <h2>Enkel Chat</h2>
+      <div style={{ border: '1px solid #ddd', padding: '10px', minHeight: '300px', marginBottom: '10px' }}>
         {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`message ${message.userId === localStorage.getItem('currentUserId') ? 'right' : 'left'}`}
-          >
-            <p dangerouslySetInnerHTML={{ __html: sanitizeMessageContent(message.content) }}></p>
-            {message.userId === localStorage.getItem('currentUserId') && (
-              <button onClick={() => handleDeleteMessage(message.id)}>Radera</button>
-            )}
+          <div key={message.id} style={{ textAlign: message.user === 'User' ? 'right' : 'left', margin: '5px 0' }}>
+            <strong>{message.user}: </strong>
+            <span>{message.content}</span>
           </div>
         ))}
       </div>
 
-      {/* Formulär för att skapa nytt meddelande */}
-      <form onSubmit={handleNewMessage}>
+      {/* Enkel input för att skicka meddelanden */}
+      <form onSubmit={handleNewMessage} style={{ display: 'flex' }}>
         <input
           type="text"
-          name="messageInput"
-          value={newMessage}  // Binder till det nya meddelandet
-          onChange={(e) => setNewMessage(e.target.value)}  // Uppdaterar state när användaren skriver
-          placeholder="Skriv ett meddelande"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Skriv ett meddelande..."
+          style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
         />
-        <button type="submit">Skicka</button>
+        <button type="submit" style={{ marginLeft: '10px', padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}>
+          Skicka
+        </button>
       </form>
     </div>
   );

@@ -38,9 +38,9 @@ const Login = ({ onLoginSuccess }) => {
       }
 
       console.log('Login successful:', data);
-      localStorage.setItem('token', data.token); // Antag att servern returnerar en token
-      onLoginSuccess(); // Uppdatera login-status i App
-      navigate('/chat'); // Omdirigera till chattsidan
+      localStorage.setItem('token', data.token); 
+      onLoginSuccess(); 
+      navigate('/chat'); 
     } catch (error) {
       console.error('Login Error:', error);
       setError('An unexpected error occurred. Please try again.');

@@ -23,15 +23,15 @@ const FetchCsrfToken = ({ setCsrfToken }) => {
       })
       .then(data => {
         console.log('Fetched CSRF Token:', data.csrfToken);
-        setCsrfToken(data.csrfToken); // Set the CSRF token using the callback
+        setCsrfToken(data.csrfToken); 
       })
       .catch(error => {
         console.error('Error fetching CSRF token:', error);
       });
     }
-  }, [setCsrfToken]); // Dependency array includes setCsrfToken to avoid re-fetching
+  }, [setCsrfToken]); 
 
-  return null; // This component does not render anything
+  return null; 
 };
 
 export default FetchCsrfToken;

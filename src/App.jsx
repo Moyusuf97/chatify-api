@@ -28,11 +28,16 @@ function App() {
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
         <Route
           path="/chat"
-          element={isLoggedIn ? <Chat /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/sidenav"
-          element={isLoggedIn ? <SideNav /> : <Navigate to="/login" />}
+          element={
+            isLoggedIn ? (
+              <div style={{ display: 'flex' }}>
+                <SideNav /> 
+                <Chat />
+              </div>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
         />
       </Routes>
     </Router>

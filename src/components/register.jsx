@@ -36,11 +36,11 @@ const Register = ({ onRegister }) => {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Assuming the response includes a token
+      
       localStorage.setItem('token', data.token);
-      onRegister(); // Call onRegister to update the App component state
+      onRegister(); 
       setSuccess(true);
-      // Navigate to the login page immediately after successful registration
+      
       navigate('/login');
     } catch (error) {
       console.error('Registration Error:', error);
