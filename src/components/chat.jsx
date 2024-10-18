@@ -1,146 +1,216 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import './Chat.css';  // Importera din stilfil
 
-// Enkel funktion för att sanera meddelandetext
 const sanitizeMessageContent = (content) => {
-  return content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-};
-
-// Enkla bot-svar
-const getBotResponse = () => {
-  const botReplies = [
-    "Hej! Hur kan jag hjälpa dig?",
-    "Vad tänker du på?",
-    "Tack för att du skrev!",
-    "Det låter intressant!",
-  ];
-  return botReplies[Math.floor(Math.random() * botReplies.length)];
+  const tempElement = document.createElement('div');
+  tempElement.innerText = content;
+  return tempElement.innerHTML;
 };
 
 const Chat = () => {
-  const [messages, setMessages] = useState([
-    { id: 1, user: 'User', content: 'Hej!' },
-    { id: 2, user: 'Bot', content: 'Hej! Hur kan jag hjälpa dig?' }
-  ]); // Starta med några exempelmeddelanden
-  const [newMessage, setNewMessage] = useState(''); // För användarinmatning
+  const [chatMessages, setChatMessages] = useState(JSON.parse(localStorage.getItem('chatMessages')) || []);
+  const [inputMessage, setInputMessage] = useState('');
+  const [fetchError, setFetchError] = useState('');
+  const [currentConversation, setCurrentConversation] = useState(localStorage.getItem('currentConversationId') || '');
+  const [currentUser, setCurrentUser] = useState(localStorage.getItem('currentUsername') || '');
+  const [currentUserId] = useState(localStorage.getItem('currentUserId') || '');
+  const [allConversations, setAllConversations] = useState(JSON.parse(localStorage.getItem('allConversations')) || []);
+  const [isChatVisible, setIsChatVisible] = useState(false); // Hanterar chattbubblans synlighet
 
-  // Funktion för att lägga till nytt meddelande
-  const handleNewMessage = (e) => {
-    e.preventDefault();
+  // Hårdkodad token (Använd inte detta i produktion)
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQzNSwidXNlciI6InNoYXJyZWJveSIsImVtYWlsIjoic2hhcm1hbkBob3RtYWlsLmNvbSIsImF2YXRhciI6bnVsbCwiaW52aXRlIjpudWxsLCJpYXQiOjE3MjkyNjMwMjYsImV4cCI6MTcyOTI2NjYyNn0.7K1Lb_I4V5u3fKsia-EjwoHCIIN7GAelASKb0_n3cN4";
 
-    // Sanera meddelandet och uppdatera listan
-    if (newMessage.trim() !== "") {
-      const userMessage = { id: messages.length + 1, user: 'User', content: sanitizeMessageContent(newMessage) };
-      setMessages([...messages, userMessage]);
-      setNewMessage(""); // Töm inmatningsfältet
+  const fakeResponses = [
+    "Det här är ett automatiskt svar!",
+    "Intressant fråga, berätta mer!",
+    "Jag håller med!",
+    "Vad tycker du om vädret idag?",
+    "Det låter spännande!",
+    "Tack för ditt meddelande!",
+    "Jag funderar också på det...",
+    "Kul att höra från dig!",
+    "Ska vi prata om något annat?",
+    "Har du några andra tankar?"
+  ];
 
-      // Simulera bot-svar efter 1 sekund
+  const getRandomResponse = () => {
+    return fakeResponses[Math.floor(Math.random() * fakeResponses.length)];
+  };
+
+  useEffect(() => {
+    if (!currentConversation) return;
+
+    const loadMessages = async () => {
+      try {
+        const response = await fetch(`https://chatify-api.up.railway.app/messages?conversationId=${currentConversation}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) throw new Error('Kunde inte hämta meddelanden');
+
+        const fetchedMessages = await response.json();
+        setChatMessages(fetchedMessages);
+        localStorage.setItem('chatMessages', JSON.stringify(fetchedMessages));
+
+        const isConversationExist = allConversations.some((conversation) => conversation.id === currentConversation);
+        if (!isConversationExist) {
+          const newConversation = {
+            id: currentConversation,
+            name: 'Ny konversation',
+          };
+          const updatedConversations = [...allConversations, newConversation];
+          setAllConversations(updatedConversations);
+          localStorage.setItem('allConversations', JSON.stringify(updatedConversations));
+        }
+      } catch (error) {
+        setFetchError('Kunde inte hämta meddelanden');
+      }
+    };
+
+    loadMessages();
+  }, [currentConversation, allConversations]);
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    try {
+      const response = await fetch('https://chatify-api.up.railway.app/messages', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: sanitizeMessageContent(inputMessage),
+          conversationId: currentConversation,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Meddelandet kunde inte skickas');
+
+      const { latestMessage } = await response.json();
+      setChatMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, { ...latestMessage, userId: currentUserId, username: currentUser }];
+        localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
+
+      setInputMessage('');
+
       setTimeout(() => {
-        const botMessage = { id: messages.length + 2, user: 'Bot', content: getBotResponse() };
-        setMessages(prevMessages => [...prevMessages, botMessage]);
-      }, 1000);
+        const fakeResponse = {
+          id: Math.random().toString(36).substr(2, 9),
+          text: getRandomResponse(),
+          conversationId: currentConversation,
+          userId: 'bot123',
+          username: 'ChatBot',
+          avatar: 'https://i.pravatar.cc/100?u=bot123',
+        };
+
+        setChatMessages((prevMessages) => {
+          const updatedMessages = [...prevMessages, fakeResponse];
+          localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+          return updatedMessages;
+        });
+      }, 2000);
+
+    } catch (error) {
+      setFetchError('Meddelandet kunde inte skickas');
     }
   };
 
-  // Funktion för att radera ett meddelande
-  const deleteMessage = (id) => {
-    // Filtrera bort meddelandet med det specifika id:et
-    setMessages(messages.filter((message) => message.id !== id));
+  const removeMessage = async (messageId) => {
+    try {
+      const response = await fetch(`https://chatify-api.up.railway.app/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) throw new Error('Meddelandet kunde inte raderas');
+
+      setChatMessages((previousMessages) => {
+        const updatedMessages = previousMessages.filter((message) => message.id !== messageId);
+        localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
+    } catch (error) {
+      setFetchError('Meddelandet kunde inte raderas');
+    }
   };
 
-  // Funktion för att få avatar-URL baserat på användartyp
-  const getAvatarUrl = (user) => {
-    return user === 'User' 
-      ? 'https://i.pravatar.cc/200?img=3'  // Avatar för användaren
-      : 'https://i.pravatar.cc/200?img=1'; // Avatar för bot
+  const selectConversation = (conversation) => {
+    setCurrentConversation(conversation.id);
+    localStorage.setItem('currentConversationId', conversation.id);
+  };
+
+  const toggleChatVisibility = () => {
+    setIsChatVisible((prevVisible) => !prevVisible);
   };
 
   return (
-    <div style={{ padding: '10px', maxWidth: '600px', margin: '0 auto', backgroundColor: '#f9f9f9', color: 'black', fontFamily: 'Arial, sans-serif' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>Enkel Chat</h2>
-      <div style={{ border: '1px solid #ddd', padding: '10px', minHeight: '300px', marginBottom: '10px', borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-        {messages.map((message) => (
-          <div 
-            key={message.id} 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: message.user === 'User' ? 'flex-end' : 'flex-start', 
-              margin: '10px 0' 
-            }}>
-            {message.user === 'Bot' && (
-              <img src={getAvatarUrl(message.user)} alt="Bot Avatar" style={{ borderRadius: '50%', width: '40px', height: '40px', marginRight: '10px' }} />
-            )}
-            <div 
-              style={{ 
-                maxWidth: '70%', 
-                backgroundColor: message.user === 'User' ? '#dcf8c6' : '#f1f0f0', 
-                padding: '10px 15px', 
-                borderRadius: '20px', 
-                position: 'relative', 
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', 
-                fontSize: '14px', 
-                lineHeight: '1.4' 
-              }}>
-              <strong>{message.user}: </strong>
-              <span>{message.content}</span>
-              {/* Lägg till en diskretare raderingsknapp */}
-              <button 
-                onClick={() => deleteMessage(message.id)} 
-                style={{ 
-                  position: 'absolute', 
-                  top: '-5px', 
-                  right: '-5px', 
-                  backgroundColor: 'transparent', 
-                  color: 'red', 
-                  border: 'none', 
-                  fontSize: '16px', 
-                  cursor: 'pointer' 
-                }}
-              >
-                &times;
-              </button>
-            </div>
-            {message.user === 'User' && (
-              <img src={getAvatarUrl(message.user)} alt="User Avatar" style={{ borderRadius: '50%', width: '40px', height: '40px', marginLeft: '10px' }} />
-            )}
-          </div>
-        ))}
+    <div className="chat-wrapper">
+      <div className="chat-bubble" onClick={toggleChatVisibility}>
+        <img src="https://i.pravatar.cc/50" alt="Chat bubble" />
       </div>
 
-      {/* Enkel input för att skicka meddelanden */}
-      <form onSubmit={handleNewMessage} style={{ display: 'flex', marginTop: '10px' }}>
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Skriv ett meddelande..."
-          style={{ 
-            flex: 1, 
-            padding: '10px', 
-            borderRadius: '20px', 
-            border: '1px solid #ccc', 
-            outline: 'none', 
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
-            fontSize: '14px' 
-          }}
-        />
-        <button 
-          type="submit" 
-          style={{ 
-            marginLeft: '10px', 
-            padding: '10px 20px', 
-            backgroundColor: '#4CAF50', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '20px', 
-            fontSize: '14px', 
-            cursor: 'pointer', 
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
-          }}
-        >
-          Skicka
-        </button>
-      </form>
+      {isChatVisible && (
+        <div className="chat-container">
+          <div className="chat-header">
+            <h2 className="chat-title">
+              Chatt: {allConversations.find((convo) => convo.id === currentConversation)?.name || ''}
+            </h2>
+          </div>
+          <div className="chat-messages">
+            <div className="message-list">
+              {chatMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`message-bubble ${message.userId?.toString() === currentUserId?.toString() ? 'sent' : 'received'}`}
+                >
+                  <div className={`message-avatar ${message.userId?.toString() === currentUserId?.toString() ? 'avatar-right' : 'avatar-left'}`}>
+                    <img src={message.avatar || 'https://i.pravatar.cc/100'} alt="avatar" />
+                  </div>
+                  <div className={`message-content ${message.userId?.toString() === currentUserId?.toString() ? 'right' : 'left'}`}>
+                    <div className="message-username">{message.username}</div>
+                    <p className="message-text" dangerouslySetInnerHTML={{ __html: sanitizeMessageContent(message.text) }}></p>
+                    {message.userId?.toString() === currentUserId?.toString() && (
+                      <button
+                        onClick={() => removeMessage(message.id)}
+                        className="remove-message-btn"
+                      >
+                        Ta bort
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="chat-input-container">
+            <input
+              id="inputMessage"
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Skriv ditt meddelande..."
+              className="input-message"
+            />
+            <button
+              onClick={sendMessage}
+              className="send-button"
+            >
+              ✉
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
