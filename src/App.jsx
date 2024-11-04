@@ -1,47 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Register from './components/register';
+import SideNav from './components/sidenav';
 import Login from './components/login';
 import Chat from './components/chat';
-import SideNav from './components/sidenav';
+import Register from './components/register';
+import FetchCsrfToken from './components/csrfToken';
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+const ProtectedRoute = ({ element, token }) => {
+  return token ? element : <Navigate to="/login" />;
+};
+
+const ErrorComponent = ({ error }) => {
+  if (!error) return null;
+  return (
+    <div className="error">
+      <p>{error}</p>
+    </div>
+  );
+};
+
+const LoadingComponent = () => (
+  <div className="loading">
+    <p>Loading...</p>
+  </div>
+);
+
+const App = () => {
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
+  const [csrfToken, setCsrfToken] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    localStorage.setItem('token', token);
+    localStorage.setItem('userId', userId);
+  }, [token, userId]);
+
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('https://chatify-api.up.railway.app/csrf', {
+          method: 'PATCH',
+        });
+        if (!response.ok) throw new Error('Failed to fetch CSRF token');
+        const data = await response.json();
+        setCsrfToken(data.csrfToken);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCsrfToken();
   }, []);
 
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
-  };
+  if (loading) {
+    return <LoadingComponent />;
+  }
 
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/"
-          element={isLoggedIn ? <Navigate to="/chat" /> : <Navigate to="/register" />}
-        />
-        <Route path="/register" element={<Register onRegister={handleLoginSuccess} />} />
-        <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-        <Route
-          path="/chat"
-          element={
-            isLoggedIn ? (
-              <div style={{ display: 'flex' }}>
-                <SideNav /> 
-                <Chat />
-              </div>
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-      </Routes>
-    </Router>
+    <div>
+      <ErrorComponent error={error} />
+      <Router>
+        <SideNav token={token} setToken={setToken} />
+        <Routes>
+          <Route path="/" element={<Register csrfToken={csrfToken} />} />
+          <Route path="/login" element={<Login setToken={setToken} setUserId={setUserId} csrfToken={csrfToken} />} />
+          <Route path="/chat" element={<ProtectedRoute element={<Chat token={token} userId={userId} />} token={token} />} />
+          <Route path="*" element={<Navigate to={token ? "/chat" : "/login"} />} />
+        </Routes>
+      </Router>
+    </div>
   );
-}
+};
 
 export default App;

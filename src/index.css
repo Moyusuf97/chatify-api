@@ -1,12 +1,21 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --primary-color: #646cff;
+  --secondary-color: #535bf2;
+  --background-color-dark: #242424;
+  --background-color-light: #ffffff;
+  --text-color-dark: rgba(255, 255, 255, 0.87);
+  --text-color-light: #213547;
+  --button-bg-dark: #1a1a1a;
+  --button-bg-light: #f9f9f9;
+  --border-radius: 8px;
+
+  font-family: var(--font-family);
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color: var(--text-color-dark);
+  background-color: var(--background-color-dark);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -15,40 +24,61 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: var(--primary-color);
+  text-decoration: none; /* Change to none for a cleaner look */
+  transition: color 0.2s; /* Add transition for hover effect */
 }
+
 a:hover {
-  color: #535bf2;
+  color: var(--secondary-color);
 }
 
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  justify-content: center;
+  align-items: center;
   min-width: 320px;
   min-height: 100vh;
+  padding: 20px; /* Add padding for better spacing */
+  box-sizing: border-box; /* Include padding in width and height */
+}
+
+.container {
+  max-width: 400px;
+  width: 100%; /* Make container responsive */
+  background-color: rgba(255, 255, 255, 0.95); /* Slightly transparent white for a modern feel */
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  padding: 20px; /* Add padding inside the container */
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 2.5em; /* Adjusted for a cleaner appearance */
+  line-height: 1.2;
+  margin-bottom: 20px; /* Spacing below heading */
+  text-align: center; /* Center align the heading */
 }
 
 button {
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--button-bg-dark);
+  color: white; /* Set text color to white */
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: background-color 0.25s, border-color 0.25s; /* Smooth transition for button */
+  width: 100%; /* Full width for buttons */
 }
+
 button:hover {
-  border-color: #646cff;
+  background-color: var(--secondary-color);
+  border-color: var(--primary-color);
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -56,13 +86,14 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color: var(--text-color-light);
+    background-color: var(--background-color-light);
   }
   a:hover {
     color: #747bff;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: var(--button-bg-light);
+    color: var(--text-color-light);
   }
 }

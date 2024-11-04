@@ -1,100 +1,99 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import FetchCsrfToken from './csrfToken';
+import React, { useState } from "react";
+import { useNavigate, NavLink } from "react-router-dom";
 
-const Register = ({ onRegister }) => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [csrfToken, setCsrfToken] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+const RegistrationForm = ({ csrfToken }) => {
+  const [user, setUser] = useState({
+    username: "",
+    password: "",
+    email: "",
+  });
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setUser({ ...user, [name]: value });
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError('');
 
-    try {
-      const response = await fetch('https://chatify-api.up.railway.app/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-        }),
-      });
+    const registrationData = {
+      ...user,
+      csrfToken,
+    };
 
-      const data = await response.json();
-      console.log('Response Data:', data);
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      
-      localStorage.setItem('token', data.token);
-      onRegister(); 
-      setSuccess(true);
-      
-      navigate('/login');
-    } catch (error) {
-      console.error('Registration Error:', error);
-      setError('An unexpected error occurred. Please try again.');
-    }
+    fetch("https://chatify-api.up.railway.app/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(registrationData),
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || "Username or email already exists");
+        }
+        localStorage.setItem("username", user.username);
+        localStorage.setItem("email", user.email);
+        navigate("/login", { state: { message: "Registration successful" } });
+      })
+      .catch((error) => setErrorMessage(error.message));
   };
 
   return (
-    <div className="register-form">
-      <FetchCsrfToken setCsrfToken={setCsrfToken} />
-      <h2>Register</h2>
-      {success && <p>User registered successfully! Redirecting to login...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleRegister}>
-        <div>
-          <label htmlFor="username">Username:</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            autoComplete="username"
-          />
-        </div>
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="new-password"
-          />
-        </div>
-        <button type="submit">Register</button>
-      </form>
+    <div className="d-flex justify-content-center align-items-center vh-100">
+      <div className="bg-light p-4 rounded shadow w-100" style={{ maxWidth: "400px" }}>
+        <h1 className="text-center mb-4">Create Account</h1>
+        {errorMessage && <div className="alert alert-danger text-center">{errorMessage}</div>}
+        <p className="text-center">
+          Are you a member?{" "}
+          <NavLink to="/login" className="text-primary">
+            Log In
+          </NavLink>
+        </p>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <input
+              type="text"
+              name="username"
+              placeholder="Username"
+              value={user.username}
+              onChange={handleInputChange}
+              required
+              className="form-control"
+            />
+          </div>
+          <div className="mb-3">
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={user.password}
+              onChange={handleInputChange}
+              required
+              className="form-control"
+            />
+          </div>
+          <div className="mb-3">
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={user.email}
+              onChange={handleInputChange}
+              required
+              className="form-control"
+            />
+          </div>
+          <button type="submit" className="btn btn-primary w-100">
+            Login
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default Register;
+export default RegistrationForm;
