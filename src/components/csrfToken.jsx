@@ -3,12 +3,12 @@ import { useEffect, useRef } from 'react';
 /**
  * Fetches a CSRF token and sets it using the provided `setCsrfToken` function.
  * 
- * @param {Object} props - Component props.
- * @param {Function} props.setCsrfToken - Function to set the CSRF token in the parent component.
- * @returns {null} - This component does not render anything.
+ * @param {Object} props 
+ * @param {Function} props.setCsrfToken 
+ * @returns {null} 
  */
 const FetchCsrfToken = ({ setCsrfToken }) => {
-  const hasFetched = useRef(false); // Ensure token is fetched only once
+  const hasFetched = useRef(false); 
 
   useEffect(() => {
     if (!hasFetched.current) {

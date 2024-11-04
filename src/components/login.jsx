@@ -1,84 +1,125 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import FetchCsrfToken from './csrfToken';
+import React, { useState } from "react";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
 
-const Login = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [csrfToken, setCsrfToken] = useState('');
-  const [error, setError] = useState('');
+const Login = ({ setToken, setUserId, csrfToken }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
+  const message = location.state?.message;
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
 
     try {
-      const response = await fetch('https://chatify-api.up.railway.app/auth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const response = await fetch(
+        "https://chatify-api.up.railway.app/auth/token",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username,
+            password,
+            csrfToken,
+          }),
+        }
+      );
 
-      // Kontrollera om svaret är HTML (kan indikera ett problem)
-      const contentType = response.headers.get('Content-Type');
-      if (contentType && contentType.includes('text/html')) {
-        const html = await response.text();
-        throw new Error(`Server responded with HTML: ${html}`);
-      }
-
-      // Förvänta JSON-svar
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error("Invalid credentials");
       }
 
-      console.log('Login successful:', data);
-      localStorage.setItem('token', data.token); 
-      onLoginSuccess(); 
-      navigate('/chat'); 
-    } catch (error) {
-      console.error('Login Error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      const token = data.token;
+      const decoded = decodeToken(token);
+
+      
+      localStorage.setItem("token", token);
+      localStorage.setItem("userId", decoded.id);
+      localStorage.setItem("username", decoded.user);
+      localStorage.setItem("avatar", decoded.avatar);
+      localStorage.setItem("email", decoded.email);
+
+      setToken(token);
+      setUserId(decoded.id);
+      setError("");
+
+      navigate("/profile");
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError(err.message);
+    }
+  };
+
+  const decodeToken = (token) => {
+    try {
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("Token decoding failed", e);
+      return {};
     }
   };
 
   return (
-    <div className="login-form">
-      <FetchCsrfToken setCsrfToken={setCsrfToken} />
-      <h2>Login</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleLogin}>
-        <div>
-          <label htmlFor="username">Username:</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            autoComplete="username"
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-        </div>
-        <button type="submit">Login</button>
-      </form>
+    <div
+      className="bg-cover bg-center min-h-screen flex items-center justify-center"
+      style={{ backgroundImage: "url('/src/components/Assets/Register.svg')" }}
+    >
+      <div className="bg-white bg-opacity-60 backdrop-blur-lg p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-2xl font-light text-center mb-8 text-gray-100 tracking-wide">
+          Login
+        </h1>
+        {message && (
+          <p className="text-green-500 text-center mb-4">{message}</p>
+        )}
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="flex flex-col">
+            <input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="p-3 border border-gray-300 rounded-full bg-gray-800 text-white placeholder-gray-400"
+            />
+          </div>
+          <div className="flex flex-col">
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="p-3 border border-gray-300 rounded-full bg-gray-800 text-white placeholder-gray-400"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full py-3 bg-green-500 text-white rounded-full hover:bg-green-600"
+          >
+            Login
+          </button>
+        </form>
+        <NavLink to="/">
+          <button className="w-full mt-3 py-3 bg-green-500 text-white rounded-full hover:bg-green-600">
+            Create new account
+          </button>
+        </NavLink>
+      </div>
     </div>
   );
 };
