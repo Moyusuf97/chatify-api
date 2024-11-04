@@ -1,47 +1,4 @@
 import React, { useState, useEffect } from 'react';
-<<<<<<< HEAD
-import './Chat.css';  // Importera din stilfil
-
-const sanitizeMessageContent = (content) => {
-  const tempElement = document.createElement('div');
-  tempElement.innerText = content;
-  return tempElement.innerHTML;
-};
-
-const Chat = () => {
-  const [chatMessages, setChatMessages] = useState(JSON.parse(localStorage.getItem('chatMessages')) || []);
-  const [inputMessage, setInputMessage] = useState('');
-  const [fetchError, setFetchError] = useState('');
-  const [currentConversation, setCurrentConversation] = useState(localStorage.getItem('currentConversationId') || '');
-  const [currentUser, setCurrentUser] = useState(localStorage.getItem('currentUsername') || '');
-  const [currentUserId] = useState(localStorage.getItem('currentUserId') || '');
-  const [allConversations, setAllConversations] = useState(JSON.parse(localStorage.getItem('allConversations')) || []);
-  const [isChatVisible, setIsChatVisible] = useState(false); // Hanterar chattbubblans synlighet
-
-  // Hårdkodad token (Använd inte detta i produktion)
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQzNSwidXNlciI6InNoYXJyZWJveSIsImVtYWlsIjoic2hhcm1hbkBob3RtYWlsLmNvbSIsImF2YXRhciI6bnVsbCwiaW52aXRlIjpudWxsLCJpYXQiOjE3MjkyNjMwMjYsImV4cCI6MTcyOTI2NjYyNn0.7K1Lb_I4V5u3fKsia-EjwoHCIIN7GAelASKb0_n3cN4";
-
-  const fakeResponses = [
-    "Det här är ett automatiskt svar!",
-    "Intressant fråga, berätta mer!",
-    "Jag håller med!",
-    "Vad tycker du om vädret idag?",
-    "Det låter spännande!",
-    "Tack för ditt meddelande!",
-    "Jag funderar också på det...",
-    "Kul att höra från dig!",
-    "Ska vi prata om något annat?",
-    "Har du några andra tankar?"
-  ];
-
-  const getRandomResponse = () => {
-    return fakeResponses[Math.floor(Math.random() * fakeResponses.length)];
-  };
-
-  useEffect(() => {
-    if (!currentConversation) return;
-
-=======
 import Sidebar from './sidenav'; 
 
 
@@ -73,7 +30,6 @@ const Chat = ({ token }) => {
   useEffect(() => {
     if (!currentConversation) return;
 
->>>>>>> 7fb8978 (lol)
     const loadMessages = async () => {
       try {
         const response = await fetch(`https://chatify-api.up.railway.app/messages?conversationId=${currentConversation}`, {
@@ -106,11 +62,7 @@ const Chat = ({ token }) => {
     };
 
     loadMessages();
-<<<<<<< HEAD
-  }, [currentConversation, allConversations]);
-=======
   }, [currentConversation, token, allConversations]);
->>>>>>> 7fb8978 (lol)
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -188,69 +140,6 @@ const Chat = ({ token }) => {
     localStorage.setItem('currentConversationId', conversation.id);
   };
 
-<<<<<<< HEAD
-  const toggleChatVisibility = () => {
-    setIsChatVisible((prevVisible) => !prevVisible);
-  };
-
-  return (
-    <div className="chat-wrapper">
-      <div className="chat-bubble" onClick={toggleChatVisibility}>
-        <img src="https://i.pravatar.cc/50" alt="Chat bubble" />
-      </div>
-
-      {isChatVisible && (
-        <div className="chat-container">
-          <div className="chat-header">
-            <h2 className="chat-title">
-              Chatt: {allConversations.find((convo) => convo.id === currentConversation)?.name || ''}
-            </h2>
-          </div>
-          <div className="chat-messages">
-            <div className="message-list">
-              {chatMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`message-bubble ${message.userId?.toString() === currentUserId?.toString() ? 'sent' : 'received'}`}
-                >
-                  <div className={`message-avatar ${message.userId?.toString() === currentUserId?.toString() ? 'avatar-right' : 'avatar-left'}`}>
-                    <img src={message.avatar || 'https://i.pravatar.cc/100'} alt="avatar" />
-                  </div>
-                  <div className={`message-content ${message.userId?.toString() === currentUserId?.toString() ? 'right' : 'left'}`}>
-                    <div className="message-username">{message.username}</div>
-                    <p className="message-text" dangerouslySetInnerHTML={{ __html: sanitizeMessageContent(message.text) }}></p>
-                    {message.userId?.toString() === currentUserId?.toString() && (
-                      <button
-                        onClick={() => removeMessage(message.id)}
-                        className="remove-message-btn"
-                      >
-                        Ta bort
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="chat-input-container">
-            <input
-              id="inputMessage"
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Skriv ditt meddelande..."
-              className="input-message"
-            />
-            <button
-              onClick={sendMessage}
-              className="send-button"
-            >
-              ✉
-            </button>
-          </div>
-        </div>
-      )}
-=======
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="chat-container bg-white rounded-lg shadow-lg max-w-md w-full">
@@ -384,7 +273,6 @@ const Chat = ({ token }) => {
           cursor: pointer;
         }
       `}</style>
->>>>>>> 7fb8978 (lol)
     </div>
   );
 };
